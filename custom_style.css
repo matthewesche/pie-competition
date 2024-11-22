@@ -1,0 +1,128 @@
+/* Custom Style for IFP Pie Competition */
+  
+  /* Load Custom Fonts */
+  @font-face {
+    font-family: 'Söhne';
+    src: url('Custom Fonts/Sohne/Söhne-Kräftig.otf') format('opentype'),
+    url('Custom Fonts/Sohne/Söhne-Extrafett.otf') format('opentype'),
+    url('Custom Fonts/Sohne/Söhne-Leicht.otf') format('opentype'),
+    url('Custom Fonts/Sohne/Söhne-LeichtKursiv.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+@font-face {
+  font-family: 'Lora';
+  src: url('Custom Fonts/Lora/Lora-Regular.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-Italic.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-Bold.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-BoldItalic.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-SemiBold.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-SemiBoldItalic.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-Medium.ttf') format('truetype'),
+  url('Custom Fonts/Lora/Lora-MediumItalic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Load Google Fonts */
+  @font-face {
+    font-family: 'Work Sans';
+    src: url('Google Fonts/Work Sans/WorkSans-VariableFont_wght.ttf') format('truetype'),
+    url('Google Fonts/Work Sans/WorkSans-Italic-VariableFont_wght.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+@font-face {
+  font-family: 'Spectral';
+  src: url('Google Fonts/Spectral/Spectral-Regular.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-Italic.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-Bold.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-BoldItalic.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-ExtraLight.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-ExtraLightItalic.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-Light.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-LightItalic.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-Medium.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-MediumItalic.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-SemiBold.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-SemiBoldItalic.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-ExtraBold.ttf') format('truetype'),
+  url('Google Fonts/Spectral/Spectral-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Apply Fonts to Body */
+  body {
+    font-family: 'Söhne', 'Work Sans', 'Arial', sans-serif;
+    background-color: #fcfbeb; /* Background Cream */
+      color: #373737; /* IFP Black */
+      line-height: 1.6;
+  }
+
+/* Heading Styles */
+  h1, h2, h3 {
+    font-family: 'Lora', 'Spectral', serif; /* Lora for headings */
+      color: #b17ada; /* IFP Purple */
+  }
+
+/* Table Styles */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: #fcfbeb; /* Background Cream */
+  }
+
+th {
+  background-color: #3368ce; /* Immigration Blue */
+    color: white;
+  padding: 10px;
+}
+
+td {
+  border: 1px solid #dddddd;
+  padding: 8px;
+}
+
+/* Links */
+  a {
+    color: #41c4fc; /* Emerging Tech Blue */
+      text-decoration: none;
+  }
+
+a:hover {
+  color: #ff6565; /* Metascience Red */
+    text-decoration: underline;
+}
+
+/* Buttons */
+  button {
+    background-color: #39d794; /* Biotechnology Green */
+      color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+  }
+
+button:hover {
+  background-color: #ff9762; /* IFP Orange */
+}
+
+/* Highlight Sections */
+  .highlight {
+    background-color: #fbdb36; /* Yellow */
+      color: #373737; /* IFP Black */
+      padding: 10px;
+    border-radius: 5px;
+  }
+
+/* Table Row Striping */
+  .striped-row:nth-child(even) {
+    background-color: #ff9ee3; /* Infrastructure Pink */
+  }
+
+.striped-row:nth-child(odd) {
+  background-color: #fcfbeb; /* Background Cream */
+}
