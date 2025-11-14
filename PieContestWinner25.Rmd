@@ -1,0 +1,320 @@
+---
+title: "IFP Pie Competition 2025 Results"
+output: 
+  html_document:
+    css: "custom_style.css"
+---
+
+# 2025 Pie of the Year
+Pie of the Year -- the people's choice -- was decided by ranked choice voting with an instant runoff, where the win condition was a majority of all active ballots. Cast Iron Apple Pie took the lead early in the first round, but it became a nail biter as Australian Vegan Meat Pie nearly caught up in round 3. Nevertheless, the Cast Iron Apple Pie prevailed in the third round (same number of fire alarms last night?) and  
+\
+\
+*Beez Africa* reigns as Pie Champion 2025, with all of the glory and eternal bragging rights that the title bestows. She joins [Pie Champion 2024 Amy Nice](PieContestWinner24.html) in the IFP Hall of Pie Champions.
+\
+\
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+library(googlesheets4)
+library(ggplot2)
+library(kableExtra)
+
+# Authenticate Google Sheets (only needed the first time)
+gs4_deauth()
+knitr::opts_chunk$set(echo = TRUE)
+sheet_url <- "https://docs.google.com/spreadsheets/d/1ZdX-om0XlLlOnRoGc7Iv2i5eRie2es9Zn7ECK4JEWX4/edit?resourcekey=&gid=1594056022#gid=1594056022"
+
+data <- read_sheet(sheet_url)
+
+# Extract columns containing rankings
+ranking_columns <- data %>%
+  select(starts_with("Please rank")) %>%
+  rename_with(~ paste0("Pie_", seq_along(.)))
+# Convert rankings to numeric
+convert_rankings <- function(x) {
+  as.numeric(str_replace(x, "th|st|nd|rd", ""))
+}
+
+ranked_ballots <- ranking_columns %>%
+  mutate(across(everything(), convert_rankings))
+
+run_rcv <- function(ballots) {
+  total_ballots <- nrow(ballots)  # Total ballots cast
+  rounds <- list()  # Store each round's results
+  
+  while (TRUE) {
+    # Count first-choice votes
+    first_choices <- apply(ballots, 1, function(row) {
+      if (all(is.na(row))) {
+        return(NA)  # Ballot is exhausted
+      } else {
+        return(names(row)[which.min(row)])
+      }
+    })
+    
+    first_choice_table <- table(first_choices, useNA = "ifany")
+    
+    # Convert to data frame for easier processing
+    round_result <- as.data.frame(first_choice_table, stringsAsFactors = FALSE) %>%
+      rename(Candidate = first_choices, Votes = Freq)
+    
+    # Calculate number of exhausted ballots
+    exhausted_votes <- sum(is.na(first_choices))
+    round_result <- round_result %>% 
+      mutate(Candidate = if_else(is.na(Candidate), "Exhausted", Candidate))
+      
+    
+    rounds <- append(rounds, list(round_result))
+    
+  # Check for majority of total ballots cast
+valid_votes <- round_result$Votes[round_result$Candidate != "Exhausted" & !is.na(round_result$Votes)]
+active_total <- sum(valid_votes)
+majority_threshold <- active_total / 2
+if (any(valid_votes > majority_threshold)) {
+  winner <- round_result$Candidate[which.max(round_result$Votes)]
+  return(list(winner = winner, rounds = rounds))
+}
+
+    
+    # Eliminate candidate(s) with the fewest votes, including those with zero votes
+    active_candidates <- round_result %>%
+      filter(Candidate != "Exhausted")
+    min_votes <- min(active_candidates$Votes)
+    eliminated <- active_candidates$Candidate[active_candidates$Votes == min_votes]
+    
+    # Update ballots by marking eliminated candidates as NA
+    ballots[colnames(ballots) %in% eliminated] <- NA
+
+    
+    # Recalculate rankings for each ballot
+   ballots <- t(apply(ballots, 1, function(row) {
+  # Re-rank only non-NA values
+  rank <- rank(row, na.last = "keep", ties.method = "min")
+  ifelse(is.na(row), NA, rank)  # Keep NA values for eliminated candidates
+}))
+
+# Convert back to data frame
+ballots <- as.data.frame(ballots)
+
+    # Terminate if all ballots are exhausted
+    if (total_ballots == exhausted_votes) {
+      return(list(winner = "No winner (all ballots exhausted)", rounds = rounds))
+    }
+  }
+}
+
+
+# Run RCV
+rcv_results <- run_rcv(ranked_ballots)
+
+# Prepare Data for Plotting
+all_pies <- c(paste0("Pie_", 1:8), "Exhausted")
+
+
+plot_data <- bind_rows(lapply(seq_along(rcv_results$rounds), function(round) {
+  round_df <- rcv_results$rounds[[round]]
+  colnames(round_df) <- c("Candidate", "Votes")
+
+  # Add missing pies with zero votes
+  complete_df <- data.frame(
+    Candidate = all_pies,
+    Round = paste("Round", round),
+    stringsAsFactors = FALSE
+  )
+  
+  # Combine actual data with the complete set
+  complete_df <- left_join(complete_df, round_df, by = c("Candidate"))
+  
+  # Fill in actual votes and ensure zero for missing pies
+  complete_df <- complete_df %>%
+    mutate(Votes = ifelse(is.na(Votes), 0, Votes)) %>%
+    select(Candidate, Votes, Round)
+  
+  complete_df
+}))
+
+library(ggplot2)
+library(dplyr)
+library(forcats)
+
+# Preprocess plot_data
+plot_data <- plot_data %>%
+  mutate(
+    # Replace underscores with spaces and fix naming
+    Candidate = ifelse(Candidate == "Exhausted", "Exhausted", gsub("_", " ", Candidate)),
+    # Ensure consistent ordering with Exhausted last
+    Candidate = factor(Candidate, levels = c((paste("Pie", 1:8)), "Exhausted"), ordered = TRUE)
+  ) %>%
+  group_by(Round) %>%
+  mutate(Votes = Votes) %>%
+  ungroup()
+
+# Define IFP palette
+ifp_palette <- c(
+  "Pie 1" = "#ff6565",
+  "Pie 2" = "#ff9762",
+  "Pie 3" = "#3368ce",
+  "Pie 4" = "#39d794",
+  "Pie 5" = "#41c4fc",
+  "Pie 6" = "#fbdb36",
+  "Pie 7" = "#ff9ee3",
+  "Pie 8" = "#ff656580",
+  "Pie 9" = "#3368ce80",
+  "Pie 10" = "#fbdb3680",
+  "Exhausted" = "#d3d3d3"
+)
+
+
+
+# Plot RCV results with IFP palette
+ggplot(plot_data, aes(x = Votes, y = fct_relevel(Candidate, paste("Pie", 1:8), "Exhausted"), fill = Candidate)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Round, scales = "free_x", ncol = 2) +
+  labs(
+    title = "Ranked Choice Voting Results",
+    x = "Number of Total Ballots",
+    y = NULL,  # Remove y-axis label
+    fill = "Candidate"
+  ) +
+  scale_y_discrete(limits = c("Exhausted", paste("Pie", 8:1))) +
+  scale_x_continuous(
+    limits = c(0, 15),
+    breaks = seq(0, 15, by = 2),  
+    labels = seq(0, 15, by = 2) 
+  ) +
+  scale_fill_manual(values = ifp_palette) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", color = "#373737"),
+    axis.text.x = element_text(size = 12, color = "#373737"),  # Adjust x-axis text
+    strip.background = element_rect(fill = "#b17ada", color = NA),
+    strip.text = element_text(color = "white", face = "bold"),
+    panel.background = element_rect(fill = "#fcfbeb", color = NA),  # Cream background
+    plot.background = element_rect(fill = "#fcfbeb", color = NA),   # Cream background
+    legend.background = element_rect(fill = "#fcfbeb", color = NA)  # Cream legend background
+  ) 
+```
+
+# Criteria Ratings
+Our discerning judges also provided their opinions on a couple criteria, handing out anywhere from 1 to 5 stars.
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Ensure consistent data types
+non_rcv_metrics <- data %>%
+  select(starts_with("Pie")) %>%
+  mutate(across(everything(), as.character))  # Convert all columns to character
+
+pies <- tribble(
+  ~Pie, ~PieName,
+  "Pie 1", "Pie 1: Sweet Potato Pecan Pie",
+  "Pie 2", "Pie 2: Chocolate Pecan Pie",
+  "Pie 3", "Pie 3: Coconut Sweet Potato",
+  "Pie 4", "Pie 4: Cast Iron Apple Pie",
+  "Pie 5", "Pie 5: Ma's Chocolate Pie",
+  "Pie 6", "Pie 6: Chocolate Silk Pie",
+  "Pie 7", "Pie 7: Vegan Pumpkin Pie",
+  "Pie 8", "Pie 8: Australian Vegan Meat Pie"
+)
+
+
+# Restructure data to ensure rows are pies and columns are criteria
+average_scores <- non_rcv_metrics %>%
+  pivot_longer(cols = everything(), names_to = "Metric", values_to = "Score") %>%
+  # Convert "5 stars" to numeric 5 and handle other cases
+  mutate(
+    Score = case_when(
+      Score == "5 stars" ~ 5,
+      TRUE ~ as.numeric(Score)
+    )
+  ) %>%
+  # Separate "Pie" and the criterion (e.g., Taste, Memorability)
+  separate(Metric, into = c("Pie", "Criterion"), sep = "\\s\\[") %>%
+  mutate(
+    Pie = str_trim(Pie),  # Remove any leading/trailing whitespace
+    Criterion = str_remove(Criterion, "\\]")  # Remove closing bracket
+  ) %>%
+  left_join(pies, by="Pie") %>% 
+  select(-Pie) %>%
+  rename(Pie = PieName) %>%
+  # Calculate average scores grouped by Pie and Criterion
+  group_by(Pie, Criterion) %>%
+  summarise(Average = round(mean(Score, na.rm = TRUE), 2), .groups = "drop") %>%
+  # Pivot data to make rows as pies and columns as criteria
+  pivot_wider(names_from = Criterion, values_from = Average) %>%
+  select(1,5,4,3,2) %>% 
+  mutate(number = as.numeric(sub("Pie (\\d+):.*", "\\1", Pie)),
+         Pie = factor(Pie, levels = Pie[order(number)], ordered = TRUE)) %>%
+  arrange(number)
+
+
+# Restructure data to ensure rows are pies and columns are criteria
+variance_scores <- non_rcv_metrics %>%
+  pivot_longer(cols = everything(), names_to = "Metric", values_to = "Score") %>%
+  # Convert "5 stars" to numeric 5 and handle other cases
+  mutate(
+    Score = case_when(
+      Score == "5 stars" ~ 5,
+      TRUE ~ as.numeric(Score)
+    )
+  ) %>%
+  # Separate "Pie" and the criterion (e.g., Taste, Memorability)
+  separate(Metric, into = c("Pie", "Criterion"), sep = "\\s\\[") %>%
+  mutate(
+    Pie = str_trim(Pie),  # Remove any leading/trailing whitespace
+    Criterion = str_remove(Criterion, "\\]")  # Remove closing bracket
+  ) %>%
+  left_join(pies, by="Pie") %>% 
+  select(-Pie) %>%
+  rename(Pie = PieName) %>%
+  # Calculate average scores grouped by Pie and Criterion
+  group_by(Pie, Criterion) %>%
+  summarise(Average = round(var(Score, na.rm = TRUE), 2), .groups = "drop") %>%
+  # Pivot data to make rows as pies and columns as criteria
+  pivot_wider(names_from = Criterion, values_from = Average) %>%
+  select(1,5,4,3,2) %>% 
+  mutate(number = as.numeric(sub("Pie (\\d+):.*", "\\1", Pie)),
+         Pie = factor(Pie, levels = Pie[order(number)], ordered = TRUE)) %>%
+  arrange(number)
+
+# Display averages in a styled table
+library(kableExtra)
+library(DT)
+
+datatable(
+  average_scores,
+  caption = "Average Stars for Non-RCV Metrics",
+  options = list(
+    pageLength = 10,
+    autoWidth = TRUE,
+    lengthChange = FALSE, # Disable the option to change the number of rows
+    searching = FALSE,     # Optional: Disable search functionality
+    info = FALSE,
+    paging = FALSE,
+    columnDefs=list(list(orderData=5,targets=0),
+                    list(visible=FALSE,targets=5))
+  ),
+  rownames = FALSE
+)
+
+
+
+
+datatable(
+  variance_scores,
+  caption = "Variance in Stars for Non-RCV Metrics",
+  options = list(
+    pageLength = 10,
+    autoWidth = TRUE,
+    lengthChange = FALSE, # Disable the option to change the number of rows
+    searching = FALSE,     # Optional: Disable search functionality
+    info = FALSE,
+    paging = FALSE,
+    columnDefs=list(list(orderData=5,targets=0),
+                    list(visible=FALSE,targets=5))
+  ),
+  rownames = FALSE
+)
+
+
+```
+
+
